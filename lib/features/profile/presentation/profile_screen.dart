@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/ui/components/badges.dart';
 import '../../../core/ui/components/layout.dart';
 import '../../../core/ui/tokens.dart';
+import '../../../core/ui/components/buttons.dart';
 import '../../auth/domain/auth_state.dart';
 import '../../home/presentation/home_shell.dart';
 import '../domain/profile_providers.dart';
@@ -101,6 +102,16 @@ class ProfileScreen extends ConsumerWidget {
                   title: const Text('No endorsements yet'),
                   subtitle: const Text('Close a project to add endorsements.'),
                 ),
+              ),
+              const SizedBox(height: AppSpacing.s24),
+              PrimaryButton(
+                label: 'Logout',
+                onPressed: () async {
+                  await ref.read(authStateProvider.notifier).signOut();
+                  if (context.mounted) {
+                    context.go('/login');
+                  }
+                },
               ),
             ],
           );

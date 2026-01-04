@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:nivora/features/feed/domain/post.dart';
+import 'package:kolabora/features/feed/domain/post.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../features/auth/domain/auth_state.dart';
@@ -13,6 +13,8 @@ import '../features/feed/presentation/feed_screen.dart';
 import '../features/feed/presentation/post_detail_screen.dart';
 import '../features/network/presentation/directory_screen.dart';
 import '../features/profile/presentation/profile_screen.dart';
+import '../features/profile/domain/profile_providers.dart';
+import '../features/auth/presentation/register_screen.dart';
 import '../features/workspaces/presentation/workspaces_screen.dart';
 import '../features/workspaces/presentation/workspace_screen.dart';
 
@@ -64,10 +66,34 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     redirect: (context, state) {
       final auth = ref.read(authStateProvider);
       final user = auth.valueOrNull;
-      final loggingIn = state.fullPath == '/login';
+      final path = state.fullPath ?? '';
+      final isLogin = path == '/login';
+      final isRegister = path == '/register';
+      final isOnboarding = path == '/onboarding/role';
+      final isProfileSetup = path == '/profile/setup';
 
-      if (user == null && !loggingIn) return '/login';
-      if (user != null && loggingIn) return '/feed';
+      // Allow unauthenticated access to login/register/onboarding
+      if (user == null) {
+        if (isLogin || isRegister || isOnboarding) return null;
+        return '/login';
+      }
+
+      // Authenticated: block login/register, but allow onboarding/setup
+      if (user != null && (isLogin || isRegister)) return '/feed';
+
+      // Enforce onboarding/profile if profile not set
+      final profileAsync = ref.read(profileProvider(user.id));
+      if (profileAsync.isLoading) return null;
+      final profile = profileAsync.valueOrNull;
+      final needsProfile = profile == null ||
+          profile.displayName.isEmpty ||
+          profile.role.isEmpty;
+      if (needsProfile && !isOnboarding && !isProfileSetup) {
+        return '/onboarding/role';
+      }
+      if (!needsProfile && (isOnboarding || isProfileSetup)) {
+        return '/feed';
+      }
       return null;
     },
     routes: [
@@ -77,13 +103,24 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/onboarding/role',
-        pageBuilder: (context, state) =>
-            _page(const OnboardingRoleScreen(), state),
+        pageBuilder:
+            (context, state) => _page(const OnboardingRoleScreen(), state),
+      ),
+      GoRoute(
+        path: '/register',
+        pageBuilder: (context, state) => _page(const RegisterScreen(), state),
       ),
       GoRoute(
         path: '/profile/setup',
-        pageBuilder: (context, state) =>
-            _page(const ProfileSetupScreen(), state),
+        pageBuilder: (context, state) {
+          final roleExtra = state.extra;
+          return _page(
+            ProfileSetupScreen(
+              initialRole: roleExtra is String ? roleExtra : null,
+            ),
+            state,
+          );
+        },
       ),
       GoRoute(
         path: '/feed',
@@ -91,18 +128,16 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/network',
-        pageBuilder: (context, state) =>
-            _page(const NetworkDirectoryScreen(), state),
+        pageBuilder:
+            (context, state) => _page(const NetworkDirectoryScreen(), state),
       ),
       GoRoute(
         path: '/workspaces',
-        pageBuilder: (context, state) =>
-            _page(const WorkspacesScreen(), state),
+        pageBuilder: (context, state) => _page(const WorkspacesScreen(), state),
       ),
       GoRoute(
         path: '/profile',
-        pageBuilder: (context, state) =>
-            _page(const ProfileScreen(), state),
+        pageBuilder: (context, state) => _page(const ProfileScreen(), state),
       ),
       GoRoute(
         path: '/profile/:id',
@@ -113,8 +148,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/create',
-        pageBuilder: (context, state) =>
-            _page(const CreatePostScreen(), state),
+        pageBuilder: (context, state) => _page(const CreatePostScreen(), state),
       ),
       GoRoute(
         path: '/post/:id',

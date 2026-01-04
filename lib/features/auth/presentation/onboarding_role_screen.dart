@@ -42,7 +42,7 @@ class _OnboardingRoleScreenState extends State<OnboardingRoleScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Nivora adalah jaringan privat untuk owner dan vendor. Pilih peran awal Anda.',
+                'kolabora adalah jaringan privat untuk owner dan vendor. Pilih peran awal Anda.',
                 style: Theme.of(context).textTheme.bodyLarge,
               ),
               const SizedBox(height: AppSpacing.s24),
@@ -57,15 +57,15 @@ class _OnboardingRoleScreenState extends State<OnboardingRoleScreen> {
                       onTap: () => setState(() => _role = item.value),
                     );
                   },
-                  separatorBuilder: (_, __) =>
-                      const SizedBox(height: AppSpacing.s12),
+                  separatorBuilder:
+                      (_, __) => const SizedBox(height: AppSpacing.s12),
                   itemCount: cards.length,
                 ),
               ),
               const SizedBox(height: AppSpacing.s16),
               PrimaryButton(
                 label: 'Lanjutkan',
-                onPressed: () => context.go('/feed'),
+                onPressed: () => context.go('/profile/setup', extra: _role),
               ),
             ],
           ),
@@ -105,12 +105,16 @@ class _RoleCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(AppSpacing.s16),
         decoration: BoxDecoration(
-          color: selected ? Theme.of(context).colorScheme.surfaceVariant : Colors.white,
+          color:
+              selected
+                  ? Theme.of(context).colorScheme.surfaceVariant
+                  : Colors.white,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: selected
-                ? Theme.of(context).colorScheme.primary
-                : Theme.of(context).colorScheme.outline,
+            color:
+                selected
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).colorScheme.outline,
           ),
         ),
         child: Row(
@@ -126,10 +130,9 @@ class _RoleCard extends StatelessWidget {
                 children: [
                   Text(
                     data.title,
-                    style: Theme.of(context)
-                        .textTheme
-                        .titleMedium
-                        ?.copyWith(fontWeight: FontWeight.w600),
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                   const SizedBox(height: AppSpacing.s8),
                   Text(data.description),

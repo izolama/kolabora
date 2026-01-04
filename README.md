@@ -1,4 +1,4 @@
-# Nivora – Private Collaboration Network
+# kolabora – Private Collaboration Network
 
 Flutter + Riverpod + go_router + Supabase. Fokus MVP: intent feed (owner/vendor), aplikasi, workspace, profil, dan undangan.
 

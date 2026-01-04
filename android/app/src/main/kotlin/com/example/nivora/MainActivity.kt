@@ -1,4 +1,4 @@
-package com.example.nivora
+package com.example.kolabora
 
 import io.flutter.embedding.android.FlutterActivity
 

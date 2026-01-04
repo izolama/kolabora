@@ -34,6 +34,20 @@ class AuthStateNotifier extends AsyncNotifier<User?> {
     return result;
   }
 
+  Future<AuthResponse> signUpWithEmail({
+    required String email,
+    required String password,
+  }) async {
+    final supabase = ref.read(supabaseClientProvider);
+    final result = await supabase.auth.signUp(
+      email: email,
+      password: password,
+      emailRedirectTo: 'kolabora://auth-callback',
+    );
+    state = AsyncData(result.session?.user);
+    return result;
+  }
+
   Future<void> signOut() async {
     final supabase = ref.read(supabaseClientProvider);
     await supabase.auth.signOut();

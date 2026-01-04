@@ -1,4 +1,4 @@
--- Nivora Supabase schema and RLS
+-- kolabora Supabase schema and RLS
 create extension if not exists "uuid-ossp";
 
 create table if not exists public.profiles (

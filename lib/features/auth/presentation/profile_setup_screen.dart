@@ -7,7 +7,9 @@ import '../../profile/domain/profile_providers.dart';
 import '../domain/auth_state.dart';
 
 class ProfileSetupScreen extends ConsumerStatefulWidget {
-  const ProfileSetupScreen({super.key});
+  const ProfileSetupScreen({super.key, this.initialRole});
+
+  final String? initialRole;
 
   @override
   ConsumerState<ProfileSetupScreen> createState() =>
@@ -50,6 +52,10 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(authStateProvider).valueOrNull;
+    final initialRole = widget.initialRole;
+    if (initialRole != null && _role != initialRole) {
+      _role = initialRole;
+    }
     if (user == null) {
       return const Scaffold(
           body: Center(child: CircularProgressIndicator()));

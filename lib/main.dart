@@ -10,12 +10,7 @@ Future<void> main() async {
   final container = ProviderContainer();
   await bootstrap(container);
 
-  runApp(
-    UncontrolledProviderScope(
-      container: container,
-      child: const MyApp(),
-    ),
-  );
+  runApp(UncontrolledProviderScope(container: container, child: const MyApp()));
 }
 
 class MyApp extends ConsumerWidget {
@@ -25,7 +20,7 @@ class MyApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(appRouterProvider);
     return MaterialApp.router(
-      title: 'Nivora',
+      title: 'kolabora',
       theme: buildTheme(),
       routerConfig: router,
     );
