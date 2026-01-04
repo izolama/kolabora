@@ -24,25 +24,32 @@ class PostDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
-  final _messageController = TextEditingController();
+  final _applicationMessageController = TextEditingController();
+  final _discussionController = TextEditingController();
   final List<String> _discussionMessages = [];
 
   @override
   void dispose() {
-    _messageController.dispose();
+    _applicationMessageController.dispose();
+    _discussionController.dispose();
     super.dispose();
   }
 
   Future<void> _apply() async {
     final user = ref.read(authStateProvider).valueOrNull;
     if (user == null) return;
-    final text = _messageController.text.trim();
-    if (text.isEmpty) return;
+    final text = _applicationMessageController.text.trim();
+    if (text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Tulis pesan aplikasi terlebih dulu')),
+      );
+      return;
+    }
 
     await ref
         .read(applicationsProvider(widget.postId).notifier)
         .submit(applicantId: user.id, message: text);
-    _messageController.clear();
+    _applicationMessageController.clear();
     if (mounted) {
       ScaffoldMessenger.of(
         context,
@@ -51,11 +58,11 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
   }
 
   void _postReply() {
-    final text = _messageController.text.trim();
+    final text = _discussionController.text.trim();
     if (text.isEmpty) return;
     setState(() {
       _discussionMessages.add(text);
-      _messageController.clear();
+      _discussionController.clear();
     });
   }
 
@@ -306,13 +313,37 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                           ],
                         ),
                         const SizedBox(height: AppSpacing.s16),
-                        Row(
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            PrimaryButton(label: 'Apply', onPressed: _apply),
-                            const SizedBox(width: AppSpacing.s12),
-                            SecondaryButton(
-                              label: 'Invite',
-                              onPressed: _invite,
+                            Text(
+                              'Pesan aplikasi',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .labelLarge,
+                            ),
+                            const SizedBox(height: AppSpacing.s8),
+                            TextField(
+                              controller: _applicationMessageController,
+                              maxLines: 3,
+                              decoration: const InputDecoration(
+                                hintText: 'Ceritakan kecocokan dan langkah selanjutnya',
+                                border: OutlineInputBorder(),
+                              ),
+                            ),
+                            const SizedBox(height: AppSpacing.s12),
+                            Row(
+                              children: [
+                                PrimaryButton(
+                                  label: 'Apply',
+                                  onPressed: _apply,
+                                ),
+                                const SizedBox(width: AppSpacing.s12),
+                                SecondaryButton(
+                                  label: 'Invite',
+                                  onPressed: _invite,
+                                ),
+                              ],
                             ),
                           ],
                         ),
@@ -357,7 +388,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                             child: Column(
                               children: [
                                 TextField(
-                                  controller: _messageController,
+                                  controller: _discussionController,
                                   maxLines: 4,
                                   decoration: const InputDecoration(
                                     hintText: 'Share your fit and next steps',

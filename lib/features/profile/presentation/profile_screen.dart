@@ -23,6 +23,7 @@ class ProfileScreen extends ConsumerWidget {
     }
 
     final targetId = userIdOverride ?? user.id;
+    final viewingSelf = targetId == user.id;
     final profile = ref.watch(profileProvider(targetId));
 
     return HomeShell(
@@ -67,11 +68,13 @@ class ProfileScreen extends ConsumerWidget {
                             style: Theme.of(context).textTheme.bodySmall),
                     ],
                   ),
-                  const Spacer(),
-                  IconButton(
-                    onPressed: () => context.push('/profile/setup'),
-                    icon: const Icon(Icons.edit_outlined),
-                  )
+                  if (viewingSelf) ...[
+                    const Spacer(),
+                    IconButton(
+                      onPressed: () => context.push('/profile/setup'),
+                      icon: const Icon(Icons.edit_outlined),
+                    )
+                  ],
                 ],
               ),
               const SizedBox(height: AppSpacing.s16),
@@ -103,16 +106,18 @@ class ProfileScreen extends ConsumerWidget {
                   subtitle: const Text('Close a project to add endorsements.'),
                 ),
               ),
-              const SizedBox(height: AppSpacing.s24),
-              PrimaryButton(
-                label: 'Logout',
-                onPressed: () async {
-                  await ref.read(authStateProvider.notifier).signOut();
-                  if (context.mounted) {
-                    context.go('/login');
-                  }
-                },
-              ),
+              if (viewingSelf) ...[
+                const SizedBox(height: AppSpacing.s24),
+                PrimaryButton(
+                  label: 'Logout',
+                  onPressed: () async {
+                    await ref.read(authStateProvider.notifier).signOut();
+                    if (context.mounted) {
+                      context.go('/login');
+                    }
+                  },
+                ),
+              ],
             ],
           );
         },

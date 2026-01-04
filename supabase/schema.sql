@@ -149,10 +149,13 @@ create policy "Owners manage their profile fields"
   on public.profile_fields for all
   using (auth.uid() = profile_id);
 
--- applications: anyone authenticated can create; post author can read their applications
+-- applications: authenticated users can create for themselves; post author can read
 create policy "Authenticated users create applications"
   on public.applications for insert
-  with check (auth.role() = 'authenticated');
+  with check (
+    auth.role() = 'authenticated'
+    and applicant_id = auth.uid()
+  );
 
 create policy "Post author reads applications"
   on public.applications for select
@@ -161,6 +164,11 @@ create policy "Post author reads applications"
       select author_id from public.posts where id = post_id
     )
   );
+
+-- allow applicants to see their own application rows (needed for insert returning)
+create policy "Applicants read their applications"
+  on public.applications for select
+  using (applicant_id = auth.uid());
 
 -- workspaces: only members can read/write
 create policy "Workspace members read"
