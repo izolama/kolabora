@@ -47,6 +47,19 @@ class ApplicationRepository {
       status: 'invited',
     );
   }
+
+  Future<Application> updateStatus({
+    required String applicationId,
+    required String status,
+  }) async {
+    final response = await _client
+        .from('applications')
+        .update({'status': status})
+        .eq('id', applicationId)
+        .select()
+        .single();
+    return Application.fromMap(response);
+  }
 }
 
 final applicationRepositoryProvider = Provider<ApplicationRepository>((ref) {

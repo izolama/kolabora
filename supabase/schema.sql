@@ -165,12 +165,25 @@ create policy "Post author reads applications"
     )
   );
 
+create policy "Post author updates applications"
+  on public.applications for update
+  using (
+    auth.uid() in (
+      select author_id from public.posts where id = post_id
+    )
+  );
+
 -- allow applicants to see their own application rows (needed for insert returning)
 create policy "Applicants read their applications"
   on public.applications for select
   using (applicant_id = auth.uid());
 
 -- workspaces: only members can read/write
+-- allow owners to create workspace rows
+create policy "Owners create workspaces"
+  on public.workspaces for insert
+  with check (auth.uid() = owner_id);
+
 create policy "Workspace members read"
   on public.workspaces for select
   using (
@@ -195,7 +208,12 @@ drop policy if exists "Members manage workspace_members" on public.workspace_mem
 
 create policy "Members manage their workspace_members rows"
   on public.workspace_members for all
-  using (auth.uid() = member_id);
+  using (
+    auth.uid() = member_id
+    or auth.uid() in (
+      select owner_id from public.workspaces where id = workspace_id
+    )
+  );
 
 -- workspace_messages: members only
 create policy "Members read workspace messages"

@@ -10,6 +10,7 @@ import '../../home/presentation/home_shell.dart';
 import '../../network/domain/field_providers.dart';
 import '../domain/feed_filters.dart';
 import '../domain/feed_providers.dart';
+import '../../auth/domain/auth_state.dart';
 
 final feedFiltersProvider = StateProvider<FeedFilters>(
   (ref) => const FeedFilters(),
@@ -78,13 +79,18 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
                   itemCount: filtered.length,
                   itemBuilder: (context, index) {
                     final post = filtered[index];
+                    final currentUser =
+                        ref.watch(authStateProvider).valueOrNull;
+                    final isAuthor = currentUser?.id == post.authorId;
+                    final onPrimary = isAuthor
+                        ? () {}
+                        : () => context.push('/post/${post.id}', extra: post);
                     return PostCard(
                       post: post,
                       onView:
                           () => context.push('/post/${post.id}', extra: post),
-                      onPrimaryAction:
-                          () => context.push('/post/${post.id}', extra: post),
-                      primaryLabel: 'Apply',
+                      onPrimaryAction: onPrimary,
+                      primaryLabel: isAuthor ? '' : 'Apply',
                     );
                   },
                 ),

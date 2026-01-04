@@ -95,6 +95,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         labelText: 'Work email',
                       ),
                       keyboardType: TextInputType.emailAddress,
+                      textCapitalization: TextCapitalization.none,
+                      style: Theme.of(context).textTheme.bodyLarge,
                       validator:
                           (value) =>
                               value == null || value.isEmpty
@@ -106,6 +108,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       controller: _passwordController,
                       decoration: const InputDecoration(labelText: 'Password'),
                       obscureText: true,
+                      textCapitalization: TextCapitalization.none,
+                      style: Theme.of(context).textTheme.bodyLarge,
                       validator:
                           (value) =>
                               value == null || value.length < 6

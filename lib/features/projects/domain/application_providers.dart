@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/application_repository.dart';
 import 'application.dart';
+import '../../workspaces/data/workspace_repository.dart';
 
 class ApplicationsNotifier
     extends AutoDisposeFamilyAsyncNotifier<List<Application>, String> {
@@ -36,6 +37,49 @@ class ApplicationsNotifier
     );
     final current = state.value ?? [];
     state = AsyncData([created, ...current]);
+  }
+
+  Future<String?> approve({
+    required Application application,
+    required String ownerId,
+  }) async {
+    final appRepo = ref.read(applicationRepositoryProvider);
+    final wsRepo = ref.read(workspaceRepositoryProvider);
+
+    // update status
+    final updated = await appRepo.updateStatus(
+      applicationId: application.id,
+      status: 'accepted',
+    );
+
+    // create workspace and members
+    final workspace = await wsRepo.create(
+      postId: _postId,
+      ownerId: ownerId,
+      memberIds: [application.applicantId],
+    );
+
+    // refresh local state
+    final current = state.value ?? [];
+    state = AsyncData([
+      updated,
+      ...current.where((a) => a.id != updated.id),
+    ]);
+
+    return workspace.id;
+  }
+
+  Future<void> reject(String applicationId) async {
+    final appRepo = ref.read(applicationRepositoryProvider);
+    final updated = await appRepo.updateStatus(
+      applicationId: applicationId,
+      status: 'rejected',
+    );
+    final current = state.value ?? [];
+    state = AsyncData([
+      updated,
+      ...current.where((a) => a.id != updated.id),
+    ]);
   }
 }
 

@@ -10,6 +10,7 @@ import '../../../core/ui/tokens.dart';
 import '../../auth/domain/auth_state.dart';
 import '../../profile/domain/profile_providers.dart';
 import '../../projects/domain/application_providers.dart';
+import '../../projects/domain/application.dart';
 import '../domain/feed_providers.dart';
 import '../domain/post.dart';
 
@@ -182,12 +183,50 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
     );
   }
 
+  Future<void> _approveApplication(Application app, String ownerId) async {
+    try {
+      final workspaceId = await ref
+          .read(applicationsProvider(widget.postId).notifier)
+          .approve(application: app, ownerId: ownerId);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Application approved')),
+      );
+      if (workspaceId != null) {
+        context.go('/workspace/$workspaceId');
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Gagal approve: $e')),
+      );
+    }
+  }
+
+  Future<void> _rejectApplication(String applicationId) async {
+    try {
+      await ref
+          .read(applicationsProvider(widget.postId).notifier)
+          .reject(applicationId);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Application rejected')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Gagal reject: $e')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final post =
         widget.initialPost != null
             ? AsyncValue<Post?>.data(widget.initialPost)
             : ref.watch(postDetailProvider(widget.postId));
+    final currentUser = ref.watch(authStateProvider).valueOrNull;
 
     return Scaffold(
       body: SafeArea(
@@ -226,6 +265,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                   if (post == null) {
                     return const Center(child: Text('Post not found'));
                   }
+                  final isAuthor = currentUser?.id == post.authorId;
                   final authorProfile = ref.watch(
                     profileProvider(post.authorId),
                   );
@@ -313,66 +353,129 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                           ],
                         ),
                         const SizedBox(height: AppSpacing.s16),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Pesan aplikasi',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .labelLarge,
-                            ),
-                            const SizedBox(height: AppSpacing.s8),
-                            TextField(
-                              controller: _applicationMessageController,
-                              maxLines: 3,
-                              decoration: const InputDecoration(
-                                hintText: 'Ceritakan kecocokan dan langkah selanjutnya',
-                                border: OutlineInputBorder(),
+                        if (!isAuthor) ...[
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Pesan aplikasi',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .labelLarge,
                               ),
-                            ),
-                            const SizedBox(height: AppSpacing.s12),
-                            Row(
-                              children: [
-                                PrimaryButton(
-                                  label: 'Apply',
-                                  onPressed: _apply,
+                              const SizedBox(height: AppSpacing.s8),
+                              TextField(
+                                controller: _applicationMessageController,
+                                maxLines: 3,
+                                textCapitalization: TextCapitalization.sentences,
+                                style: Theme.of(context).textTheme.bodyLarge,
+                                decoration: const InputDecoration(
+                                  hintText: 'Ceritakan kecocokan dan langkah selanjutnya',
+                                  border: OutlineInputBorder(),
                                 ),
-                                const SizedBox(width: AppSpacing.s12),
-                                SecondaryButton(
-                                  label: 'Invite',
-                                  onPressed: _invite,
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
+                              ),
+                              const SizedBox(height: AppSpacing.s12),
+                              Row(
+                                children: [
+                                  PrimaryButton(
+                                    label: 'Apply',
+                                    onPressed: _apply,
+                                  ),
+                                  const SizedBox(width: AppSpacing.s12),
+                                  SecondaryButton(
+                                    label: 'Invite',
+                                    onPressed: _invite,
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ] else ...[
+                          const SizedBox(height: AppSpacing.s8),
+                          Text(
+                            'Anda adalah author. Undang atau kelola aplikasi di bawah.',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ],
                         const SizedBox(height: AppSpacing.s24),
                         const SectionHeader(title: 'Applications'),
                         applications.when(
-                          data:
-                              (apps) =>
-                                  apps.isEmpty
-                                      ? const EmptyState(
-                                        title: 'Belum ada aplikasi',
-                                        subtitle:
-                                            'Undang partner atau tunggu vendor melamar.',
-                                      )
-                                      : Column(
-                                        children:
-                                            apps
-                                                .map(
-                                                  (app) => Card(
-                                                    child: ListTile(
-                                                      title: Text(app.message),
-                                                      subtitle: Text(
-                                                        'Applicant: ${app.applicantId} • ${app.status}',
-                                                      ),
-                                                    ),
+                          data: (apps) {
+                            if (apps.isEmpty) {
+                              return const EmptyState(
+                                title: 'Belum ada aplikasi',
+                                subtitle:
+                                    'Undang partner atau tunggu vendor melamar.',
+                              );
+                            }
+                            final isAuthor = currentUser?.id == post.authorId;
+                            return Column(
+                              children: apps
+                                  .map(
+                                    (app) => Card(
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(
+                                          AppSpacing.s12,
+                                        ),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              app.message,
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .titleMedium,
+                                            ),
+                                            const SizedBox(
+                                              height: AppSpacing.s4,
+                                            ),
+                                            Text(
+                                              'Applicant: ${app.applicantId}',
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .bodyMedium,
+                                            ),
+                                            const SizedBox(
+                                              height: AppSpacing.s4,
+                                            ),
+                                            StatusBadge(status: app.status),
+                                            if (isAuthor &&
+                                                app.status == 'pending') ...[
+                                              const SizedBox(
+                                                height: AppSpacing.s8,
+                                              ),
+                                              Row(
+                                                children: [
+                                                  SecondaryButton(
+                                                    label: 'Reject',
+                                                    onPressed: () =>
+                                                        _rejectApplication(
+                                                          app.id,
+                                                        ),
                                                   ),
-                                                )
-                                                .toList(),
+                                                  const SizedBox(
+                                                    width: AppSpacing.s8,
+                                                  ),
+                                                  PrimaryButton(
+                                                    label: 'Approve & open',
+                                                    onPressed: () =>
+                                                        _approveApplication(
+                                                          app,
+                                                          currentUser!.id,
+                                                        ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ],
+                                          ],
+                                        ),
                                       ),
+                                    ),
+                                  )
+                                  .toList(),
+                            );
+                          },
                           loading:
                               () => const Padding(
                                 padding: EdgeInsets.all(AppSpacing.s8),
@@ -390,6 +493,8 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                                 TextField(
                                   controller: _discussionController,
                                   maxLines: 4,
+                                  textCapitalization: TextCapitalization.sentences,
+                                  style: Theme.of(context).textTheme.bodyLarge,
                                   decoration: const InputDecoration(
                                     hintText: 'Share your fit and next steps',
                                   ),
